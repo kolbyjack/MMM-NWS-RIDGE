@@ -1,3 +1,9 @@
+.MMM-NWS-RIDGE .wrapper {
+  position: relative;
+  width: 300px;
+  height: 275px;
+}
+
 .MMM-NWS-RIDGE .layer {
   position: absolute;
   top: 0px;

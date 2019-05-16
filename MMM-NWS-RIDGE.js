@@ -73,8 +73,7 @@ Module.register("MMM-NWS-RIDGE", {
     var self = this;
     var wrapper = document.createElement("div");
 
-    wrapper.style.width = "300px";
-    wrapper.style.height = "275px";
+    wrapper.className = "wrapper";
     for (var i in self.config.mapLayers) {
       wrapper.appendChild(self.createMapLayer(self.config.mapLayers[i]));
     }
