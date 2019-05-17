@@ -44,7 +44,7 @@ Module.register("MMM-NWS-RIDGE", {
               lastRadarFrame.style.display = "none";
             }
 
-            if (nextRadarFrame !== null) {
+            if (nextRadarFrame !== null && nextRadarFrame.naturalWidth !== 0) {
               nextRadarFrame.style.display = "block";
             }
           }, 500);
