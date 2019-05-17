@@ -53,11 +53,10 @@ Module.register("MMM-NWS-RIDGE", {
         self.radarImages = payload.images.slice(0, self.config.maximumEntries);
         self.currentRadarFrame = self.currentRadarFrame % (self.radarImages.length + 4);
 
-        for (var i = 0; i < self.radarImages.length; ++i) {
-          var radarFrame = self.getRadarFrame(i);
-          if (radarFrame !== null) {
-            radarFrame.src = self.radarImages[i];
-          }
+        for (var i = 0; i < self.config.maximumEntries; ++i) {
+          var radarFrame = document.getElementById("nws-ridge-radar-frame-" + i);
+          radarFrame.src = self.radarImages[i];
+          radarFrame.style.display = (self.currentRadarFrame === i) ? "block" : "none";
         }
       }
     }
