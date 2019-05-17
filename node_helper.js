@@ -22,7 +22,6 @@ module.exports = NodeHelper.create({
     var self = this;
 
     console.log(fmt("Starting node helper for: {}", self.name));
-    self.cache = {};
   },
 
   socketNotificationReceived: function(notification, payload) {
@@ -35,18 +34,9 @@ module.exports = NodeHelper.create({
 
   fetchRidgeData: function(config) {
     var self = this;
-    var cache_key = self.getCacheKey(config);
     var url;
     var method = "GET";
     var body = undefined;
-
-    if (cache_key in self.cache &&
-        config.maximumEntries <= self.cache[cache_key].images.length &&
-        Date.now() < self.cache[cache_key].expires)
-    {
-      self.sendRidgeUpdate(config);
-      return;
-    }
 
     self.request(config, {
       url: fmt("https://radar.weather.gov/ridge/RadarImg/{}/{}/", config.radarType, config.station),
@@ -76,25 +66,25 @@ module.exports = NodeHelper.create({
 
         if (response.statusCode < 400 && body.length > 0) {
           self.processResponse(response, body, config);
+        } else {
+          console.error(fmt(" ERROR - MMM-NWS-RIDGE: HTTP {}", response.statusCode));
         }
       }
     );
   },
 
-  sendRidgeUpdate: function(config) {
+  sendRidgeUpdate: function(config, images) {
     var self = this;
-    var cache_key = self.getCacheKey(config);
 
     self.sendSocketNotification("NWS_RIDGE_UPDATE", {
       "station": config.station,
       "radarType": config.radarType,
-      "images": self.cache[cache_key].images,
+      "images": images,
     });
   },
 
   processResponse: function(response, body, config) {
     var self = this;
-    var cache_key = self.getCacheKey(config);
     var images = [];
 
     var dom = htmlparser.parseDOM(body);
@@ -108,15 +98,6 @@ module.exports = NodeHelper.create({
       return;
     }
 
-    self.cache[cache_key] = {
-      "expires": Date.now() + config.updateInterval * 0.9,
-      "images": images,
-    };
-
-    self.sendRidgeUpdate(config);
-  },
-
-  getCacheKey: function(config) {
-    return config.station + "::" + config.radarType;
+    self.sendRidgeUpdate(config, images);
   },
 });
