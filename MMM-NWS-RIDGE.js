@@ -20,6 +20,7 @@ Module.register("MMM-NWS-RIDGE", {
 
     self.radarImages = null;
     self.currentRadarFrame = -1;
+    self.nextRadarFrame = -1;
 
     self.getData();
     setInterval(function() { self.getData(); }, self.config.updateInterval);
@@ -36,32 +37,38 @@ Module.register("MMM-NWS-RIDGE", {
       if (payload.station === self.config.station && payload.radarType === self.config.radarType) {
         if (self.radarImages === null) {
           setInterval(function() {
-            var lastRadarFrame = self.getRadarFrame(self.currentRadarFrame);
-            self.currentRadarFrame = (self.currentRadarFrame + 1) % (self.radarImages.length + 4);
-            var nextRadarFrame = self.getRadarFrame(self.currentRadarFrame);
+            self.nextRadarFrame = (self.nextRadarFrame + 1) % (self.radarImages.length + 4);
 
-            if (self.currentRadarFrame < self.radarImages.length &&
-                nextRadarFrame !== null &&
-                nextRadarFrame.naturalWidth !== 0)
-            {
-              if (lastRadarFrame !== null) {
-                lastRadarFrame.style.display = "none";
+            if (self.nextRadarFrame < self.radarImages.length && self.nextRadarFrame != self.currentRadarFrame) {
+              var nextRadarFrame = self.getRadarFrame(self.nextRadarFrame);
+              if (nextRadarFrame !== null && nextRadarFrame.naturalWidth !== 0) {
+                var lastRadarFrame = self.getRadarFrame(self.currentRadarFrame);
+
+                if (lastRadarFrame !== null) {
+                  lastRadarFrame.style.display = "none";
+                }
+
+                nextRadarFrame.style.display = "block";
+                self.currentRadarFrame = self.nextRadarFrame;
               }
-
-              nextRadarFrame.style.display = "block";
             }
           }, 500);
         }
 
         self.radarImages = payload.images.slice(-self.config.maximumEntries);
-        self.currentRadarFrame = self.currentRadarFrame % self.radarImages.length;
+        self.currentRadarFrame = self.currentRadarFrame % (self.radarImages.length || 1);
+        self.nextRadarFrame = self.nextRadarFrame % (self.radarImages.length + 4);
 
         for (var i = 0; i < self.config.maximumEntries; ++i) {
-          var radarFrame = document.getElementById("nws-ridge-radar-frame-" + i);
+          var radarFrame = self.getRadarFrame(i);
+
           if (i < self.radarImages.length) {
             radarFrame.src = self.radarImages[i];
+            radarFrame.style.display = (self.currentRadarFrame === i) ? "block" : "none";
+          } else {
+            radarFrame.src = "";
+            radarFrame.style.display = "none";
           }
-          radarFrame.style.display = (self.currentRadarFrame === i) ? "block" : "none";
         }
       }
     }
@@ -114,8 +121,6 @@ Module.register("MMM-NWS-RIDGE", {
   },
 
   getRadarFrame: function(index) {
-    var self = this;
-    var frameIndex = Math.min(self.radarImages.length - 1, index);
-    return document.getElementById("nws-ridge-radar-frame-" + frameIndex);
+    return document.getElementById("nws-ridge-radar-frame-" + index);
   },
 });
