@@ -22,6 +22,7 @@ module.exports = NodeHelper.create({
     var self = this;
 
     console.log(fmt("Starting node helper for: {}", self.name));
+    self.cache = {};
   },
 
   socketNotificationReceived: function(notification, payload) {
@@ -37,6 +38,15 @@ module.exports = NodeHelper.create({
     var url;
     var method = "GET";
     var body = undefined;
+    var cache_key = self.getCacheKey(config);
+
+    if (cache_key in self.cache &&
+        config.maximumEntries <= self.cache[cache_key].images.length &&
+        Date.now() < self.cache[cache_key].expires)
+    {
+      self.sendRidgeUpdate(config);
+      return;
+    }
 
     self.request(config, {
       url: fmt("https://radar.weather.gov/ridge/RadarImg/{}/{}/", config.radarType, config.station),
@@ -73,13 +83,14 @@ module.exports = NodeHelper.create({
     );
   },
 
-  sendRidgeUpdate: function(config, images) {
+  sendRidgeUpdate: function(config) {
     var self = this;
+    var cache_key = self.getCacheKey(config);
 
     self.sendSocketNotification("NWS_RIDGE_UPDATE", {
       "station": config.station,
       "radarType": config.radarType,
-      "images": images,
+      "images": self.cache[cache_key].images,
     });
   },
 
@@ -105,7 +116,14 @@ module.exports = NodeHelper.create({
     var self = this;
 
     if (urls.length === 0) {
-      self.sendRidgeUpdate(config, data);
+      var cache_key = self.getCacheKey(config);
+
+      self.cache[cache_key] = {
+        "expires": Date.now() + config.updateInterval * 0.9,
+        "images": data,
+      };
+
+      self.sendRidgeUpdate(config);
     } else {
       request({
         url: urls[0],
@@ -124,5 +142,9 @@ module.exports = NodeHelper.create({
         self.fetchRidgeImages(config, urls.slice(1), data);
       });
     }
+  },
+
+  getCacheKey: function(config) {
+    return config.station + "::" + config.radarType;
   },
 });
