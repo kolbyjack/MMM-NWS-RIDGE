@@ -98,6 +98,31 @@ module.exports = NodeHelper.create({
       return;
     }
 
-    self.sendRidgeUpdate(config, images);
+    self.fetchRidgeImages(config, images.slice(-config.maximumEntries), []);
+  },
+
+  fetchRidgeImages: function(config, urls, data) {
+    var self = this;
+
+    if (urls.length === 0) {
+      self.sendRidgeUpdate(config, data);
+    } else {
+      request({
+        url: urls[0],
+        headers: {
+          "user-agent": "MagicMirror:MMM-NWS-RIDGE:v1.0",
+          "cache-control": "no-cache",
+        },
+        encoding: null,
+      },
+      function(error, response, body) {
+        if (response.statusCode < 400 && body.length > 0) {
+          var base64 = body.toString("base64");
+          data.push("data:image/gif;base64," + base64);
+        }
+
+        self.fetchRidgeImages(config, urls.slice(1), data);
+      });
+    }
   },
 });
