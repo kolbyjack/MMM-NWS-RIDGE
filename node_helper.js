@@ -5,23 +5,11 @@ const request = require("request");
 const htmlparser = require("htmlparser2");
 const domutils = require("domutils");
 
-function fmt(f) {
-    var parts = f.split("{}");
-    var result = parts[0];
-    var i;
-
-    for (i = 1; i < parts.length; ++i) {
-        result += arguments[i] + parts[i];
-    }
-
-    return result;
-}
-
 module.exports = NodeHelper.create({
   start: function() {
     var self = this;
 
-    console.log(fmt("Starting node helper for: {}", self.name));
+    console.log(`Starting node helper for: ${self.name}`);
     self.cache = {};
   },
 
@@ -49,7 +37,7 @@ module.exports = NodeHelper.create({
     }
 
     self.request(config, {
-      url: fmt("https://radar.weather.gov/ridge/RadarImg/{}/{}/", config.radarType, config.station),
+      url: `https://radar.weather.gov/ridge/RadarImg/${config.radarType}/${config.station}/`,
       headers: {
         "user-agent": "MagicMirror:MMM-NWS-RIDGE:v1.0"
       },
@@ -71,13 +59,13 @@ module.exports = NodeHelper.create({
       function(error, response, body) {
         if (error) {
           self.sendSocketNotification("NWS_RIDGE_FETCH_ERROR", { error: error });
-          return console.error(fmt(" ERROR - MMM-NWS-RIDGE: {}", error));
+          return console.error(` ERROR - MMM-NWS-RIDGE: ${error}`);
         }
 
         if (response.statusCode < 400 && body.length > 0) {
           self.processResponse(response, body, config);
         } else {
-          console.error(fmt(" ERROR - MMM-NWS-RIDGE: HTTP {}", response.statusCode));
+          console.error(` ERROR - MMM-NWS-RIDGE: HTTP ${response.statusCode}`);
         }
       }
     );
